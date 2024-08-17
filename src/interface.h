@@ -1,1 +1,1 @@
-void activate(GtkApplication *app, gpointer user_draw_parts_data);
+void activate(GtkApplication *app, gpointer user_data);

@@ -3,8 +3,8 @@
 FLAGS = -Wpointer-integer-compare $(shell pkg-config --cflags gtk4)
 LIBS = $(shell pkg-config --libs gtk4)
 
-# CC = gcc
-СС = llvm-gcc
+CC = gcc
+# СС = llvm-gcc
 
 EXCLUDE_FILES :=
 

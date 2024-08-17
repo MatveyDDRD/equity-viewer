@@ -5,6 +5,23 @@ void undo_action_callback(GSimpleAction *action, GVariant *parameter, gpointer u
 
 void redo_action_callback(GSimpleAction *action, GVariant *parameter, gpointer user_draw_parts_data) {printf("Redo button clicked\n");}
 
+/*
+ * filles eqiuty_list_box
+ */
+void equtys_list_refresh(GtkWidget *box)
+{
+	// добавить когда разберемся с API
+}
+
+void draw_function(GtkDrawingArea *area, 
+                   cairo_t *cr, 
+                   int width, 
+                   int height, 
+                   gpointer user_data) {
+	// background
+	cairo_set_source_rgb(cr, 0.15, 0.15, 0.15);
+	cairo_paint(cr);
+}
 
 /*
  * window
@@ -17,7 +34,7 @@ void redo_action_callback(GSimpleAction *action, GVariant *parameter, gpointer u
  * 
  * Окно с инструментами потом добавить либо как отдельные окно, либо самостоятельно отрисовывать с помошью cairo
  */
-void activate(GtkApplication *app, gpointer user_draw_parts_data) {
+void activate(GtkApplication *app, gpointer user_data) {
 	// *** Main window ***
 	GtkWidget *window = gtk_application_window_new(app);
 	gtk_window_set_title(GTK_WINDOW(window), "Window");
@@ -69,6 +86,7 @@ void activate(GtkApplication *app, gpointer user_draw_parts_data) {
 	gtk_application_set_menubar(GTK_APPLICATION(app), G_MENU_MODEL(menu_bar));
 	gtk_application_window_set_show_menubar(GTK_APPLICATION_WINDOW(window), TRUE);
 
+	// test button
 	GtkWidget *butt = gtk_button_new();
 	gtk_button_set_label(GTK_BUTTON(butt), "button");
 
@@ -83,6 +101,64 @@ void activate(GtkApplication *app, gpointer user_draw_parts_data) {
 
 	gtk_box_append(GTK_BOX(main_vertical_box), notebook);
 
+
+	// *** Paned ***
+	GtkWidget *main_frame = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL); // sidebar | candles
+	GtkWidget *sidebar_frame = gtk_frame_new(NULL);
+	GtkWidget *candles_frame = gtk_frame_new(NULL);
+
+	gtk_box_append(GTK_BOX(main_vertical_box), main_frame);
+
+	gtk_paned_set_start_child(GTK_PANED(main_frame), sidebar_frame);
+	gtk_paned_set_resize_start_child(GTK_PANED(main_frame), TRUE);
+	gtk_paned_set_shrink_start_child(GTK_PANED(main_frame), FALSE);
+	gtk_widget_set_size_request(sidebar_frame, 50, -1);
+
+	gtk_paned_set_end_child(GTK_PANED(main_frame), candles_frame);
+	gtk_paned_set_resize_end_child(GTK_PANED(main_frame), TRUE);
+	gtk_paned_set_shrink_end_child(GTK_PANED(main_frame), FALSE);
+	gtk_widget_set_size_request(candles_frame, 50, -1);
+
+
+	// *** Sidebar ***
+	// box in sidebar
+	GtkWidget *sidebar_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	gtk_frame_set_child(GTK_FRAME(sidebar_frame), sidebar_box);
+
+	// ДОБАВИТЬ ЗДЕСЬ ОКНО ПОИСКА
+
+	// scrolled window for equity's list in sidebar
+	GtkWidget *sidebar_scrolled = gtk_scrolled_window_new();
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sidebar_scrolled), 
+	                                                   GTK_POLICY_AUTOMATIC, 
+	                                                   GTK_POLICY_AUTOMATIC);
+	gtk_widget_set_vexpand(sidebar_scrolled, TRUE);
+	gtk_widget_set_hexpand(sidebar_scrolled, TRUE);
+	gtk_box_append(GTK_BOX(sidebar_box), sidebar_scrolled);
+
+
+	// eqiuty's list box
+	/* в box будут помещаться фреймы в которых будут название актива, его цена, и возможно что то еще.
+	 * если ничего особенного не понадобится (Ну например стрелочка зеленого или красного цвета, 
+	 * обозначающая рост или падение актива) заменим на простые gtkButtons
+	 */
+	GtkWidget *eqiuty_list_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(sidebar_scrolled), eqiuty_list_box);
+
+	equtys_list_refresh(eqiuty_list_box);
+
+
+	// *** Candels drawing area (cairo) ***
+	GtkWidget *drawing_area = gtk_drawing_area_new();
+	gtk_drawing_area_set_content_width(GTK_DRAWING_AREA(drawing_area), 500);
+	gtk_drawing_area_set_content_height(GTK_DRAWING_AREA(drawing_area), 500);
+	gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(drawing_area), 
+	                               draw_function, 
+	                               NULL,
+	                               NULL);
+	gtk_widget_set_vexpand(drawing_area, TRUE);
+	gtk_widget_set_hexpand(drawing_area, TRUE);
+	gtk_frame_set_child(GTK_FRAME(candles_frame), drawing_area);
 
 
 	// *** Show all ***
