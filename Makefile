@@ -1,7 +1,7 @@
 # this makefile compiles all files in dir src/
 
 FLAGS = -Wpointer-integer-compare $(shell pkg-config --cflags gtk4)
-LIBS = $(shell pkg-config --libs gtk4)
+LIBS = $(shell pkg-config --libs gtk4) -lcurl
 
 CC = gcc
 # СС = llvm-gcc
@@ -13,20 +13,19 @@ OBJS := $(patsubst src/%.c, build/obj/%.o, $(SRCS))
 
 all: install
 
-install: eqiuty-viewer
+install: equity-viewer
 
-eqiuty-viewer: $(OBJS)
+equity-viewer: $(OBJS)
 	$(CC) -O3 $(FLAGS) -o $@ $^ $(LIBS)
 
 build/obj/%.o: src/%.c src/*.h | build/obj
 	$(CC) $(FLAGS) -c $< -o $@
 
-
 build/obj:
 	mkdir -p build/obj
 
-run: eqiuty-viewer
-	./eqiuty-viewer
+run: equity-viewer
+	./equity-viewer
 
 clean:
-	rm -f build/obj/*.o eqiuty-viewer
+	rm -f build/obj/*.o equity-viewer

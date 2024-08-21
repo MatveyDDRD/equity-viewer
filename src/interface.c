@@ -1,26 +1,40 @@
 #include <stdio.h>
 #include <gtk/gtk.h>
 
-void undo_action_callback(GSimpleAction *action, GVariant *parameter, gpointer user_draw_parts_data) {printf("Undo button clicked\n");}
+#include "interface.h"
 
-void redo_action_callback(GSimpleAction *action, GVariant *parameter, gpointer user_draw_parts_data) {printf("Redo button clicked\n");}
+#define ALLOC_CHECK(pointer) \
+    if (pointer == NULL) { \
+        printf("Fatal error: allocation error in function %s\n", __func__); \
+        exit(EXIT_FAILURE); \
+    }
+
+#define ALLOC(pointer, type, elements_num, elements_add_num).             \
+	if (elements_num == 0)												  \
+	{																	  \
+		pointer = malloc( sizeof(type) * elements_add_num );			  \
+	}else if( elements_num > 0) {										  \
+		pointer = realloc(pointer, sizeof(type) * elements_add_num );	  \
+	}else{																  \
+		printf("trying to allocate memory for negative number of elements in function __func__\n"); \
+		exit(EXIT_FAILURE);												  \
+	}																	  \
+	ALLOC_CHECK(pointer);												  \
+
+
+void undo_action_callback(GSimpleAction *action, GVariant *parameter, gpointer user_draw_parts_data) {
+	printf("Undo button clicked\n");
+}
+
+void redo_action_callback(GSimpleAction *action, GVariant *parameter, gpointer user_draw_parts_data) {
+	printf("Redo button clicked\n");
+}
 
 /*
  * filles eqiuty_list_box
  */
-void equtys_list_refresh(GtkWidget *box)
-{
+void equtys_list_refresh(GtkWidget *box) {
 	// добавить когда разберемся с API
-}
-
-void draw_function(GtkDrawingArea *area, 
-                   cairo_t *cr, 
-                   int width, 
-                   int height, 
-                   gpointer user_data) {
-	// background
-	cairo_set_source_rgb(cr, 0.15, 0.15, 0.15);
-	cairo_paint(cr);
 }
 
 /*
@@ -44,8 +58,8 @@ void activate(GtkApplication *app, gpointer user_data) {
 	GtkWidget *main_vertical_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_window_set_child(GTK_WINDOW(window), main_vertical_box);
 
-	// пока добавил просто пример меню, чтобы потом проще было проще создавать его, 
-	// и не надо было долго копаться в документации
+	/* пока добавил просто пример меню, чтобы потом проще было проще создавать его, 
+	и не надо было долго копаться в документации */
 
 	// Create the main menu
 	GMenu *menu_bar = g_menu_new();
@@ -149,13 +163,19 @@ void activate(GtkApplication *app, gpointer user_data) {
 
 
 	// *** Candels drawing area (cairo) ***
+	// structure that contains data that cairo should draw
+	draw_data *draw_data = malloc(sizeof(draw_data));
+	gpointer draw_data_gpointer = draw_data;
+
+
+	// make drawing area widget
 	GtkWidget *drawing_area = gtk_drawing_area_new();
 	gtk_drawing_area_set_content_width(GTK_DRAWING_AREA(drawing_area), 500);
 	gtk_drawing_area_set_content_height(GTK_DRAWING_AREA(drawing_area), 500);
 	gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(drawing_area), 
 	                               draw_function, 
 	                               NULL,
-	                               NULL);
+	                               draw_data_gpointer);
 	gtk_widget_set_vexpand(drawing_area, TRUE);
 	gtk_widget_set_hexpand(drawing_area, TRUE);
 	gtk_frame_set_child(GTK_FRAME(candles_frame), drawing_area);

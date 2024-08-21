@@ -4,7 +4,7 @@
 
 #include "dynArray.h"
 
-// RE6GIKKZ0EQJIOMG - апи ключ (не знаю работает или инет)
+// RE6GIKKZ0EQJIOMG - апи ключ (не знаю работает или нет)
 
 // struct that have data of bar
 typedef struct {
@@ -16,19 +16,26 @@ typedef struct {
 } bar;
 
 // one of possible intervals of bar
-enum interval {
+typedef enum {
     NONE,
     ONEMIN,
     FIVEMIN,
     FIVETEENMIN, 
     HALFOFHOUR, 
     HOUR
-};
+}interval;
 
 /*
  * returns array of bars from json input
  */
 dynArray processCandleData(const char *jsonData) {
 
+
+}
+
+
+
+dynArray get_candels(interval interval, int candels_num)
+{
 
 }
