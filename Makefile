@@ -1,6 +1,6 @@
 # this makefile compiles all files in dir src/
 
-FLAGS = -Wpointer-integer-compare $(shell pkg-config --cflags gtk4)
+FLAGS = -Wpointer-compare $(shell pkg-config --cflags gtk4)
 LIBS = $(shell pkg-config --libs gtk4) -lcurl
 
 CC = gcc
@@ -28,4 +28,4 @@ run: equity-viewer
 	./equity-viewer
 
 clean:
-	rm -f build/obj/*.o equity-viewer
+	rm -f build/obj/*.o eqiuty-viewer
