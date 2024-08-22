@@ -5,7 +5,11 @@
 #include "interface.h"
 
 int main(int argc, char **argv) {
+
     curl_global_init(CURL_GLOBAL_ALL);
+
+    void testFunc();
+    testFunc();
 
     GtkApplication *app;
     int status;
@@ -17,3 +21,13 @@ int main(int argc, char **argv) {
     return status;
     return 0;
 };
+
+// #include <stdio.h>
+// #include <curl/curl.h>
+ 
+// int main(void)
+// {
+
+ 
+//   return 0;
+// }
