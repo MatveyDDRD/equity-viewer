@@ -26,7 +26,7 @@ typedef enum {
 }interval;
 
 typedef enum {
-    REFRESH_LIST,
+    REFRESH_LIST_INTRADAY,
     SEARCH_BAR
 }apiCallAction;
 
@@ -65,7 +65,7 @@ char* makeApiCallUrl(apiCallAction act,
     strcpy(url, "https://www.alphavantage.co/query?function=");
 
     switch (act) {
-        case REFRESH_LIST:
+        case REFRESH_LIST_INTRADAY:
             strcat(url, "TIME_SERIES_INTRADAY");
             strcat(url, "&symbol=");
             strcat(url, symbol);
@@ -90,42 +90,44 @@ char* makeApiCallUrl(apiCallAction act,
     // url[strlen(url)] = '\0';
 }
 
-dynArray get_candels(interval interval, int candels_num, char* symbol) {
+char* callApi(char* url) {
+
+}
+
+dynArray getCandels(interval interval, int candels_num, char* symbol) {
     // char* url = makeApiCallUrl(REFRESH_LIST, interval, symbol, );
 }
 
 void testFunc() {
     interval interval = ONEMIN;
-    char *testchar = makeApiCallUrl(REFRESH_LIST, interval, "IBM", "RE6GIKKZ0EQJIOMG");
+    char *testchar = makeApiCallUrl(REFRESH_LIST_INTRADAY, interval, "IBM", "RE6GIKKZ0EQJIOMG");
     printf("\n some %s\n", testchar);
 
-      CURL *curl;
-      CURLcode res;
-     
-      curl_global_init(CURL_GLOBAL_DEFAULT);
-     
-      curl = curl_easy_init();
-      if(curl) {
-        curl_easy_setopt(curl, CURLOPT_URL, testchar);
-     
-    #ifdef SKIP_HOSTNAME_VERIFICATION
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-    #endif
-     
-        /* cache the CA cert bundle in memory for a week */
-        curl_easy_setopt(curl, CURLOPT_CA_CACHE_TIMEOUT, 604800L);
-     
-        /* Perform the request, res gets the return code */
-        res = curl_easy_perform(curl);
+    CURL *curl;
+    CURLcode res;
 
-        if(res != CURLE_OK)
-          fprintf(stderr, "curl_easy_perform() failed: %s\n",
-                  curl_easy_strerror(res));
-     
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+
+    curl = curl_easy_init();
+    if(curl) {
+    curl_easy_setopt(curl, CURLOPT_URL, testchar);
+
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+    /* cache the CA cert bundle in memory for a week */
+    curl_easy_setopt(curl, CURLOPT_CA_CACHE_TIMEOUT, 604800L);
+
+    /* Perform the request, res gets the return code */
+    res = curl_easy_perform(curl);
+
+    if(res != CURLE_OK)
+      fprintf(stderr, "curl_easy_perform() failed: %s\n",
+              curl_easy_strerror(res));
+
         curl_easy_cleanup(curl);
-      }
-     
-      curl_global_cleanup();
+    }
+
+    curl_global_cleanup();
 }
 
 

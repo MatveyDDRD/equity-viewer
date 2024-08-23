@@ -21,13 +21,3 @@ int main(int argc, char **argv) {
     return status;
     return 0;
 };
-
-// #include <stdio.h>
-// #include <curl/curl.h>
- 
-// int main(void)
-// {
-
- 
-//   return 0;
-// }

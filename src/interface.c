@@ -103,17 +103,9 @@ void activate(GtkApplication *app, gpointer user_data) {
 	// test button
 	GtkWidget *butt = gtk_button_new();
 	gtk_button_set_label(GTK_BUTTON(butt), "button");
+	GtkWidget *butt2 = gtk_button_new();
+	gtk_button_set_label(GTK_BUTTON(butt2), "button2");
 
-
-
-	// *** Make tabs switcher ***
-	GtkWidget *notebook = gtk_notebook_new();
-
-	GtkWidget *label = gtk_label_new("main tab");
-
-	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), butt, label);
-
-	gtk_box_append(GTK_BOX(main_vertical_box), notebook);
 
 
 	// *** Paned ***
@@ -121,7 +113,7 @@ void activate(GtkApplication *app, gpointer user_data) {
 	GtkWidget *sidebar_frame = gtk_frame_new(NULL);
 	GtkWidget *candles_frame = gtk_frame_new(NULL);
 
-	gtk_box_append(GTK_BOX(main_vertical_box), main_frame);
+	// gtk_box_append(GTK_BOX(main_vertical_box), main_frame);
 
 	gtk_paned_set_start_child(GTK_PANED(main_frame), sidebar_frame);
 	gtk_paned_set_resize_start_child(GTK_PANED(main_frame), TRUE);
@@ -134,12 +126,40 @@ void activate(GtkApplication *app, gpointer user_data) {
 	gtk_widget_set_size_request(candles_frame, 50, -1);
 
 
+	/* Сейчас здесь просто вкладка с воркспейсом, и вкладка с кнопкой, 
+	 * позже надо будет реализовать создание и удаление вкладок, 
+	 * но сейчас это не в приоритете*/
+
+	// *** Make tabs switcher ***
+	GtkWidget *notebook = gtk_notebook_new();
+
+	GtkWidget *label = gtk_label_new("main tab");
+	GtkWidget *label2 = gtk_label_new("second tab");
+
+	// GtkWidget *sidebar_frame = gtk_frame_new(NULL);
+
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), main_frame, label);
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), butt2, label2);
+
+	gtk_box_append(GTK_BOX(main_vertical_box), notebook);
+
+
 	// *** Sidebar ***
 	// box in sidebar
 	GtkWidget *sidebar_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_frame_set_child(GTK_FRAME(sidebar_frame), sidebar_box);
 
-	// ДОБАВИТЬ ЗДЕСЬ ОКНО ПОИСКА
+
+	// *** Search bar ***
+	GtkWidget *entry = gtk_entry_new();
+	gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "Search");
+
+	GtkWidget *search_bar = gtk_search_bar_new();
+	gtk_search_bar_connect_entry(GTK_SEARCH_BAR(search_bar), GTK_EDITABLE(GTK_ENTRY(entry)));
+
+	gtk_box_append(GTK_BOX(sidebar_box), search_bar);
+	gtk_box_append(GTK_BOX(sidebar_box), entry);
+
 
 	// scrolled window for equity's list in sidebar
 	GtkWidget *sidebar_scrolled = gtk_scrolled_window_new();
