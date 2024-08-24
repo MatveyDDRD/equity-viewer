@@ -16,17 +16,21 @@
 	}else if( elements_num > 0) {										  \
 		pointer = realloc(pointer, sizeof(type) * elements_add_num );	  \
 	}else{																  \
-		printf("trying to allocate memory for negative number of elements in function __func__\n"); \
+		printf("allocation error in function __func__\n");                \
 		exit(EXIT_FAILURE);												  \
 	}																	  \
 	ALLOC_CHECK(pointer);												  \
 
 
-void undo_action_callback(GSimpleAction *action, GVariant *parameter, gpointer user_draw_parts_data) {
+void undo_action_callback(GSimpleAction *action, 
+		                  GVariant *parameter, 
+		                  gpointer user_draw_parts_data) {
 	printf("Undo button clicked\n");
 }
 
-void redo_action_callback(GSimpleAction *action, GVariant *parameter, gpointer user_draw_parts_data) {
+void redo_action_callback(GSimpleAction *action, 
+						  GVariant *parameter, 
+						  gpointer user_draw_parts_data) {
 	printf("Redo button clicked\n");
 }
 
@@ -37,6 +41,59 @@ void equtys_list_refresh(GtkWidget *box) {
 	// добавить когда разберемся с API
 }
 
+
+// /*
+//  * callback for pressing enter when search bar is active
+//  */
+// void on_search_activated(GtkEntry *entry, gpointer user_data) {
+
+// 	// get text buffer from entry
+// 	GtkEntryBuffer *buffer = gtk_entry_buffer_new(NULL, -1);
+//     buffer =  gtk_entry_get_buffer(entry);
+
+//     // if there is some text in the search bar
+//     if (g_strcmp0(gtk_entry_buffer_get_text(buffer), "") != 0) {
+
+//     	GtkWidget* popover = gtk_popover_new();
+//  		// как сделать чтобы просто появлялся поповер и был под строкой поиска?
+
+//     }
+// }
+
+
+// Holds pointers to the popover and its results box for use in the search callback.
+typedef struct {
+    GtkWidget *popover;
+    GtkWidget *results_box;
+} search_cb_data;
+
+void on_search_activated(GtkEntry *entry, gpointer user_data) {
+
+	search_cb_data *data = (search_cb_data *)user_data;
+
+	GtkWidget *popover = data->popover;
+
+	GtkWidget* results_box = data->results_box;
+
+	// get text buffer from entry
+	GtkEntryBuffer *buffer = gtk_entry_buffer_new(NULL, -1);
+    buffer =  gtk_entry_get_buffer(entry);
+
+    // if there is some text in the search bar
+    if (g_strcmp0(gtk_entry_buffer_get_text(buffer), "") != 0) {
+    	// show the popover
+		gtk_widget_set_visible(popover, true);
+
+		// api call for getting search data
+
+		// json into array of structures that have info about matches to show
+
+		// make widgets for matches
+    }
+
+}
+
+
 /*
  * window
  *    -main vertical box
@@ -46,7 +103,8 @@ void equtys_list_refresh(GtkWidget *box) {
  * 	       - equity's
  * 	       - candels
  * 
- * Окно с инструментами потом добавить либо как отдельные окно, либо самостоятельно отрисовывать с помошью cairo
+ * Окно с инструментами потом добавить либо как отдельные окно, 
+ * либо самостоятельно отрисовывать с помошью cairo
  */
 void activate(GtkApplication *app, gpointer user_data) {
 	// *** Main window ***
@@ -152,14 +210,47 @@ void activate(GtkApplication *app, gpointer user_data) {
 
 	// *** Search bar ***
 	GtkWidget *entry = gtk_entry_new();
-	gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "Search");
+	gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "Search...");
 
+	// popover that will show search results
+	GtkWidget *search_popover = gtk_popover_new();
+	gtk_popover_set_has_arrow(GTK_POPOVER(search_popover), FALSE);
+	gtk_popover_set_position(GTK_POPOVER(search_popover), GTK_POS_BOTTOM);
+
+	// 1st box in the popover that has a label and scrolled window
+	GtkWidget *search_popover_label = gtk_label_new("Search results:");
+	GtkWidget *search_popover_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+	gtk_box_append(GTK_BOX(search_popover_box), search_popover_label);
+	gtk_popover_set_child(GTK_POPOVER(search_popover), search_popover_box);
+
+	// scrolled window
+	GtkWidget *search_popover_scrolled = gtk_scrolled_window_new();
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(search_popover_scrolled), 
+	                               GTK_POLICY_AUTOMATIC, 
+	                               GTK_POLICY_AUTOMATIC);
+
+	// 2nd box in scrolled window that will have search results
+	GtkWidget *search_results_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+	gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(search_popover_scrolled), search_results_box);
+	gtk_box_append(GTK_BOX(search_popover_box), search_popover_scrolled);
+
+	// pin popover to search bar
+	gtk_widget_set_parent(search_popover, GTK_WIDGET(entry));
+
+	// Создаем и инициализируем структуру данных
+	search_cb_data *search_data = g_new(search_cb_data, 1);
+	search_data->popover = search_popover;
+	search_data->results_box = search_results_box;
+
+	// Подключаем сигнал activate к обработчику, передавая структуру данных
+	g_signal_connect(entry, "activate", G_CALLBACK(on_search_activated), search_data);
+
+	// Остальная часть кода
 	GtkWidget *search_bar = gtk_search_bar_new();
 	gtk_search_bar_connect_entry(GTK_SEARCH_BAR(search_bar), GTK_EDITABLE(GTK_ENTRY(entry)));
 
 	gtk_box_append(GTK_BOX(sidebar_box), search_bar);
 	gtk_box_append(GTK_BOX(sidebar_box), entry);
-
 
 	// scrolled window for equity's list in sidebar
 	GtkWidget *sidebar_scrolled = gtk_scrolled_window_new();
@@ -172,14 +263,17 @@ void activate(GtkApplication *app, gpointer user_data) {
 
 
 	// eqiuty's list box
-	/* в box будут помещаться фреймы в которых будут название актива, его цена, и возможно что то еще.
-	 * если ничего особенного не понадобится (Ну например стрелочка зеленого или красного цвета, 
-	 * обозначающая рост или падение актива) заменим на простые gtkButtons
+	/* в box будут помещаться фреймы в которых будут название актива, его цена, 
+	 * и возможно что то еще.
+	 * если ничего особенного не понадобится (Ну например стрелочка зеленого или 
+	 * красного цвета, обозначающая рост или падение актива) заменим на простые gtkButtons
 	 */
 	GtkWidget *eqiuty_list_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(sidebar_scrolled), eqiuty_list_box);
 
 	equtys_list_refresh(eqiuty_list_box);
+
+
 
 
 	// *** Candels drawing area (cairo) ***
