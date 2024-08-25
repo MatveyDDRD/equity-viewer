@@ -3,17 +3,31 @@
 
 #include "drawing.h"
 
+#define ALLOC_CHECK(pointer) \
+    if (pointer == NULL) { \
+        printf("Fatal error: allocation error in function %s\n", __func__); \
+        exit(EXIT_FAILURE); \
+    }
+
+#define ALLOC(pointer, type, elements_num, elements_add_num).             \
+	if (elements_num == 0)												  \
+	{																	  \
+		pointer = malloc( sizeof(type) * elements_add_num );			  \
+	}else if( elements_num > 0) {										  \
+		pointer = realloc(pointer, sizeof(type) * elements_add_num );	  \
+	}else{																  \
+		printf("allocation error in function __func__\n");                \
+		exit(EXIT_FAILURE);												  \
+	}																	  \
+	ALLOC_CHECK(pointer);												  \
+
+
+
+typedef struct{
+	char* current_asset;
+	position view_pos;
+}tab_context;
+
 void activate(GtkApplication *app, gpointer user_data);
-
-typedef struct {
-	/* first dimention array elements are a closed shape made up of connected points.
-	 One element represents a single component in the drawing.
-	second dimention is a points of a component */
-	position** points;
-	int *points_num;
-	int elements_num;
-
-	color *elements_colors;
-}draw_data;
 
 #endif

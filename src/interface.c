@@ -3,24 +3,35 @@
 
 #include "interface.h"
 
-#define ALLOC_CHECK(pointer) \
-    if (pointer == NULL) { \
-        printf("Fatal error: allocation error in function %s\n", __func__); \
-        exit(EXIT_FAILURE); \
-    }
+#include <stdio.h>
 
-#define ALLOC(pointer, type, elements_num, elements_add_num).             \
-	if (elements_num == 0)												  \
-	{																	  \
-		pointer = malloc( sizeof(type) * elements_add_num );			  \
-	}else if( elements_num > 0) {										  \
-		pointer = realloc(pointer, sizeof(type) * elements_add_num );	  \
-	}else{																  \
-		printf("allocation error in function __func__\n");                \
-		exit(EXIT_FAILURE);												  \
-	}																	  \
-	ALLOC_CHECK(pointer);												  \
+void drawing_area_on_press(GtkGestureSingle *gesture, gdouble x, gdouble y, gpointer user_data) {
+	tab_context *tab = (tab_context*)user_data;
+	view_pos = tab->view_pos;
+	
+    printf("Press: x = %f, y = %f\n", x, y);
+}
 
+void drawing_area_on_release(GtkGestureSingle *gesture, gdouble x, gdouble y, gpointer user_data) {
+	tab_context *tab = (tab_context*)user_data;
+	view_pos = tab->view_pos;
+	
+    printf("Release: x = %f, y = %f\n", x, y);
+}
+
+void on_drag_update(GtkGestureDrag *gesture, gdouble offset_x, gdouble offset_y, gpointer user_data) {
+	tab_context *tab = (tab_context*)user_data;
+	view_pos = tab->view_pos;
+	
+    printf("Drag update: offset_x = %f, offset_y = %f\n", offset_x, offset_y);
+}
+
+void on_scroll(GtkEventControllerScroll *controller, gdouble delta_x, gdouble delta_y, gpointer user_data) {
+	tab_context *tab = (tab_context*)user_data;
+	view_pos = tab->view_pos;
+	
+    printf("Scroll: delta_x = %f, delta_y = %f\n", delta_x, delta_y);
+}
 
 void undo_action_callback(GSimpleAction *action, 
 		                  GVariant *parameter, 
@@ -35,31 +46,11 @@ void redo_action_callback(GSimpleAction *action,
 }
 
 /*
- * filles eqiuty_list_box
+ * filles assets_list_box
  */
 void equtys_list_refresh(GtkWidget *box) {
 	// добавить когда разберемся с API
 }
-
-
-// /*
-//  * callback for pressing enter when search bar is active
-//  */
-// void on_search_activated(GtkEntry *entry, gpointer user_data) {
-
-// 	// get text buffer from entry
-// 	GtkEntryBuffer *buffer = gtk_entry_buffer_new(NULL, -1);
-//     buffer =  gtk_entry_get_buffer(entry);
-
-//     // if there is some text in the search bar
-//     if (g_strcmp0(gtk_entry_buffer_get_text(buffer), "") != 0) {
-
-//     	GtkWidget* popover = gtk_popover_new();
-//  		// как сделать чтобы просто появлялся поповер и был под строкой поиска?
-
-//     }
-// }
-
 
 // Holds pointers to the popover and its results box for use in the search callback.
 typedef struct {
@@ -100,8 +91,8 @@ void on_search_activated(GtkEntry *entry, gpointer user_data) {
  * 	    - toolbar
  * 	    - tabs
  * 	    - workspace
- * 	       - equity's
- * 	       - candels
+ * 	       - assets
+ * 	       - candles
  * 
  * Окно с инструментами потом добавить либо как отдельные окно, 
  * либо самостоятельно отрисовывать с помошью cairo
@@ -252,7 +243,7 @@ void activate(GtkApplication *app, gpointer user_data) {
 	gtk_box_append(GTK_BOX(sidebar_box), search_bar);
 	gtk_box_append(GTK_BOX(sidebar_box), entry);
 
-	// scrolled window for equity's list in sidebar
+	// scrolled window for assets list in sidebar
 	GtkWidget *sidebar_scrolled = gtk_scrolled_window_new();
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sidebar_scrolled), 
 	                                                   GTK_POLICY_AUTOMATIC, 
@@ -262,25 +253,31 @@ void activate(GtkApplication *app, gpointer user_data) {
 	gtk_box_append(GTK_BOX(sidebar_box), sidebar_scrolled);
 
 
-	// eqiuty's list box
+	// attets list box
 	/* в box будут помещаться фреймы в которых будут название актива, его цена, 
 	 * и возможно что то еще.
 	 * если ничего особенного не понадобится (Ну например стрелочка зеленого или 
 	 * красного цвета, обозначающая рост или падение актива) заменим на простые gtkButtons
 	 */
-	GtkWidget *eqiuty_list_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(sidebar_scrolled), eqiuty_list_box);
+	GtkWidget *assets_list_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(sidebar_scrolled), assets_list_box);
 
-	equtys_list_refresh(eqiuty_list_box);
-
-
+	equtys_list_refresh(assets_list_box);
 
 
-	// *** Candels drawing area (cairo) ***
-	// structure that contains data that cairo should draw
-	draw_data *draw_data = malloc(sizeof(draw_data));
-	gpointer draw_data_gpointer = draw_data;
 
+	// *** candles drawing area (cairo) ***
+
+	/* Важно: эта структура это просто временное решение. 
+	 * Позже, когда уже реализуеим работу с вкладками, 
+	 * надо добавить возможность использовать разные вкладки*/
+	tab_context *tab_context = malloc( sizeof(tab_context) );
+
+	// init tab context
+	tab_context->current_asset = "\0";
+	tab_context->view_pos = (position){0, 0};
+
+	gpointer tab_context_gpointer = tab_context;
 
 	// make drawing area widget
 	GtkWidget *drawing_area = gtk_drawing_area_new();
@@ -289,12 +286,41 @@ void activate(GtkApplication *app, gpointer user_data) {
 	gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(drawing_area), 
 	                               draw_function, 
 	                               NULL,
-	                               draw_data_gpointer);
+	                               tab_context_gpointer);
 	gtk_widget_set_vexpand(drawing_area, TRUE);
 	gtk_widget_set_hexpand(drawing_area, TRUE);
 	gtk_frame_set_child(GTK_FRAME(candles_frame), drawing_area);
 
 
+
+	// *** Gestures ***
+	GtkGesture *click_gesture;
+	GtkGesture *drag_gesture;
+
+	// press
+	click_gesture = gtk_gesture_click_new ();
+	gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (click_gesture), GDK_BUTTON_PRIMARY);
+	g_signal_connect (click_gesture, "pressed", G_CALLBACK (drawing_area_on_press), tab_context_gpointer);
+	g_signal_connect (click_gesture, "released", G_CALLBACK (drawing_area_on_release), tab_context_gpointer);
+	gtk_widget_add_controller (drawing_area, GTK_EVENT_CONTROLLER (click_gesture));
+
+	// drag
+	drag_gesture = gtk_gesture_drag_new ();
+	g_signal_connect (drag_gesture, "drag-update", G_CALLBACK (on_drag_update), tab_context_gpointer);
+	gtk_widget_add_controller (drawing_area, GTK_EVENT_CONTROLLER (drag_gesture));
+
+	// scroll
+	GtkEventController *scroll_controller = gtk_event_controller_scroll_new(GTK_EVENT_CONTROLLER_SCROLL_VERTICAL);
+	g_signal_connect(scroll_controller, "scroll", G_CALLBACK(on_scroll), tab_context_gpointer);
+	gtk_widget_add_controller(drawing_area, scroll_controller);
+
+	// // mouse motion callback
+	// GtkEventController *mouse_controller = gtk_event_controller_motion_new();
+	// g_signal_connect(mouse_controller, "motion", G_CALLBACK(on_motion_in_draw_area), pointer_pos);
+	// gtk_widget_add_controller(drawing_area, mouse_controller);
+
+
 	// *** Show all ***
 	gtk_window_present(GTK_WINDOW(window));
+
 }

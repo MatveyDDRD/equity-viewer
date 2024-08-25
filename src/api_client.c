@@ -7,14 +7,6 @@
 
 // RE6GIKKZ0EQJIOMG - апи ключ
 
-// struct that have data of bar
-typedef struct {
-    float open;
-    float high;
-    float low;
-    float close;
-    float volume;
-} bar;
 
 // one of possible intervals of bar
 typedef enum { 
@@ -94,7 +86,7 @@ char* callApi(char* url) {
 
 }
 
-dynArray getCandels(interval interval, int candels_num, char* symbol) {
+dynArray getcandles(interval interval, int candles_num, char* symbol) {
     // char* url = makeApiCallUrl(REFRESH_LIST, interval, symbol, );
 }
 
