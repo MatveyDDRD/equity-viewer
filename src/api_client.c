@@ -178,7 +178,7 @@ void printBars(dynArray* bars) {
 
 void testFunc() {
     interval interval = ONEMIN;
-    char *testUrl = makeApiCallUrl(REFRESH_LIST, interval, "IBM", "RE6GIKKZ0EQJIOMG");
+    char *testUrl = makeApiCallUrl(REFRESH_LIST_INTRADAY, interval, "IBM", "RE6GIKKZ0EQJIOMG");
 
     char* jsonData = get_candles(testUrl);
 
