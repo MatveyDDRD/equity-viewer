@@ -2,56 +2,45 @@
 #include <curl/curl.h>
 #include <string.h>
 #include <stdlib.h>
-
+#include "../cjson/cJSON.h"
 #include "dynArray.h"
 
-// RE6GIKKZ0EQJIOMG - апи ключ
+// апи ключ - RE6GIKKZ0EQJIOMG
 
+// struct that have data of bar
+typedef struct {
+    float open;
+    float high;
+    float low;
+    float close;
+    float volume;
+} bar;
 
-// one of possible intervals of bar
 typedef enum { 
     ONEMIN,
     FIVEMIN,
     FIVETEENMIN, 
     HALFOFHOUR, 
     HOUR
-}interval;
+} interval;
 
 typedef enum {
     REFRESH_LIST_INTRADAY,
     SEARCH_BAR
-}apiCallAction;
-
-/*
- * returns array of bars from json input
- */
-dynArray processCandleData(const char *jsonData) {
-
-
-}
+} apiCallAction;
 
 char* getIntervalString(interval interval) {
     switch(interval) {
-        case ONEMIN:
-            return "1min";
-        case FIVEMIN:
-            return "5min";
-        case FIVETEENMIN:
-            return "15min";
-        case HALFOFHOUR:
-            return "30min";
-        case HOUR:
-            return "60min";
+        case ONEMIN: return "1min";
+        case FIVEMIN: return "5min";
+        case FIVETEENMIN: return "15min";
+        case HALFOFHOUR: return "30min";
+        case HOUR: return "60min";
+        default: return "";
     }
 }
-char* makeApiCallUrl(apiCallAction act,
-                   interval interval,
-                   char* symbol,
-                   char* apikey) {
 
-    // https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&apikey=demo need
-    // https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=ONEMIN&apikey=RE6GIKKZ0EQJIOMG got
-
+char* makeApiCallUrl(apiCallAction act, interval interval, char* symbol, char* apikey) {
     char url[128];
 
     strcpy(url, "https://www.alphavantage.co/query?function=");
@@ -66,75 +55,149 @@ char* makeApiCallUrl(apiCallAction act,
             strcat(url, "&apikey=");
             strcat(url, apikey);
             break;
-
         case SEARCH_BAR:
             break;
+    }
 
-  }
-
-    char *ret = malloc( sizeof(char) * strlen(url) );
-
-    for (int i = 0; i < strlen(url); ++i)
-    {
-        ret[i] = url[i];
+    char *ret = malloc(strlen(url) + 1);
+    if (ret != NULL) {
+        strcpy(ret, url);
     }
     return ret;
-    // url[strlen(url)] = '\0';
 }
 
-char* callApi(char* url) {
+typedef struct {
+    char *memory;
+    size_t size;
+} MemoryStruct;
 
+static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+    size_t realsize = size * nmemb;
+    MemoryStruct *mem = (MemoryStruct *)userp;
+
+    char *ptr = realloc(mem->memory, mem->size + realsize + 1);
+    if(ptr == NULL) {
+        printf("Not enough memory (realloc returned NULL)\n");
+        return 0;
+    }
+
+    mem->memory = ptr;
+    memcpy(&(mem->memory[mem->size]), contents, realsize);
+    mem->size += realsize;
+    mem->memory[mem->size] = 0;
+
+    return realsize;
 }
 
-dynArray getcandles(interval interval, int candles_num, char* symbol) {
-    // char* url = makeApiCallUrl(REFRESH_LIST, interval, symbol, );
+dynArray* processCandleData(const char *jsonData) {
+    dynArray* bars = dynArrayMake();
+
+    cJSON *json = cJSON_Parse(jsonData);
+    if (json == NULL) {
+        printf("Error parsing JSON\n");
+        return bars;
+    }
+
+    cJSON *timeSeries = cJSON_GetObjectItem(json, "Time Series (1min)");
+    if (timeSeries == NULL) {
+        printf("Error: No time series data found\n");
+        cJSON_Delete(json);
+        return bars;
+    }
+
+    cJSON *timestamp = NULL;
+    cJSON_ArrayForEach(timestamp, timeSeries) {
+        cJSON *open = cJSON_GetObjectItem(timestamp, "1. open");
+        cJSON *high = cJSON_GetObjectItem(timestamp, "2. high");
+        cJSON *low = cJSON_GetObjectItem(timestamp, "3. low");
+        cJSON *close = cJSON_GetObjectItem(timestamp, "4. close");
+        cJSON *volume = cJSON_GetObjectItem(timestamp, "5. volume");
+
+        if (open && high && low && close && volume) {
+            bar *newBar = malloc(sizeof(bar));
+            if (newBar == NULL) {
+                printf("Error: Could not allocate memory for bar\n");
+                continue;
+            }
+
+            newBar->open = atof(open->valuestring);
+            newBar->high = atof(high->valuestring);
+            newBar->low = atof(low->valuestring);
+            newBar->close = atof(close->valuestring);
+            newBar->volume = atof(volume->valuestring);
+
+            dynArrayAddElement_private(bars, &newBar, sizeof(bar*));
+        }
+    }
+
+    cJSON_Delete(json);
+    return bars;
+}
+
+char* get_candles(char* url) {
+    CURL *curl;
+    CURLcode res;
+    MemoryStruct chunk;
+
+    chunk.memory = malloc(1);
+    chunk.size = 0;
+
+    if (chunk.memory == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        return NULL;
+    }
+
+    curl_global_init(CURL_GLOBAL_ALL);
+
+    curl = curl_easy_init();
+    if(curl) {
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
+
+        res = curl_easy_perform(curl);
+
+        if(res != CURLE_OK)
+          fprintf(stderr, "curl_easy_perform() failed: %s\n",
+                  curl_easy_strerror(res));
+     
+        curl_easy_cleanup(curl);
+    }
+    curl_global_cleanup();
+
+    return chunk.memory;
+}
+
+void printBars(dynArray* bars) {
+    for (size_t i = 0; i < bars->elementsNum; i++) {
+        bar* b = *(bar**)dynArrayGetElement(bars, i);
+        printf("Bar %zu: Open: %f, High: %f, Low: %f, Close: %f, Volume: %f\n",
+               i, b->open, b->high, b->low, b->close, b->volume);
+    }
 }
 
 void testFunc() {
     interval interval = ONEMIN;
-    char *testchar = makeApiCallUrl(REFRESH_LIST_INTRADAY, interval, "IBM", "RE6GIKKZ0EQJIOMG");
-    printf("\n some %s\n", testchar);
+    char *testUrl = makeApiCallUrl(REFRESH_LIST_INTRADAY, interval, "IBM", "RE6GIKKZ0EQJIOMG");
 
-    CURL *curl;
-    CURLcode res;
+    char* jsonData = get_candles(testUrl);
 
-    curl_global_init(CURL_GLOBAL_DEFAULT);
+    if (jsonData != NULL) {
+        printf("Received JSON data:\n%s\n", jsonData);
 
-    curl = curl_easy_init();
-    if(curl) {
-    curl_easy_setopt(curl, CURLOPT_URL, testchar);
+        dynArray* bars = processCandleData(jsonData);
 
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+        printBars(bars);
 
-    /* cache the CA cert bundle in memory for a week */
-    curl_easy_setopt(curl, CURLOPT_CA_CACHE_TIMEOUT, 604800L);
-
-    /* Perform the request, res gets the return code */
-    res = curl_easy_perform(curl);
-
-    if(res != CURLE_OK)
-      fprintf(stderr, "curl_easy_perform() failed: %s\n",
-              curl_easy_strerror(res));
-
-        curl_easy_cleanup(curl);
+        free(jsonData);
+        for (size_t i = 0; i < bars->elementsNum; i++) {
+            bar* b = *(bar**)dynArrayGetElement(bars, i);
+            free(b);
+        }
+        free(bars);
+    } else {
+        printf("Failed to retrieve data\n");
     }
 
-    curl_global_cleanup();
+    free(testUrl);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
