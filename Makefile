@@ -1,26 +1,23 @@
 # this makefile compiles all files in dir src/
 
-FLAGS = -Wpointer-compare -Icjson $(shell pkg-config --cflags gtk4)
-LIBS = $(shell pkg-config --libs gtk4) -lcurl
-
 CC = gcc
+CFLAGS = -Wpointer-compare -O3 -Icjson $(shell pkg-config --cflags gtk4)
+LDFLAGS = $(shell pkg-config --libs gtk4) -lcurl
 
 SRCS := $(wildcard src/*.c) cjson/cJSON.c
 OBJS := $(patsubst src/%.c, build/obj/%.o, $(SRCS))
 OBJS := $(OBJS:cjson/%.c=build/obj/%.o)
 
-all: install
-
-install: equity-viewer
+all: equity-viewer
 
 equity-viewer: $(OBJS)
-	$(CC) -O3 $(FLAGS) -o $@ $^ $(LIBS)
+	$(CC) $(OBJS) -o $@ $(LDFLAGS)
 
 build/obj/%.o: src/%.c | build/obj
-	$(CC) $(FLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
-build/obj/cJSON.o: cjson/cJSON.c | build/obj
-	$(CC) $(FLAGS) -c $< -o $@
+build/obj/cJSON.o: src/cjson/cJSON.c | build/obj
+	$(CC) $(CFLAGS) -c $< -o $@
 
 build/obj:
 	mkdir -p build/obj
